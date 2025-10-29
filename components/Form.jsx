@@ -1,27 +1,34 @@
+// components/Form.jsx
 "use client";
 
-import {
-  EmailOutlined,
-  LockOutlined,
-  PersonOutline,
-} from "@mui/icons-material";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
-import { signIn } from "next-auth/react"
+import { signIn } from "next-auth/react";
+
+import { HiOutlineMail, HiOutlineLockClosed, HiOutlineUser } from "react-icons/hi";
+import { motion } from "framer-motion";
+
+const InputIcon = ({ children }) => (
+  <div className="w-9 h-9 flex items-center justify-center rounded-lg text-text-sub">
+    {children}
+  </div>
+);
 
 const Form = ({ type }) => {
   const {
     register,
     handleSubmit,
     watch,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm();
 
   const router = useRouter();
 
   const onSubmit = async (data) => {
+    // Keep original logic exactly the same
     if (type === "register") {
       const res = await fetch("/api/auth/register", {
         method: "POST",
@@ -33,10 +40,14 @@ const Form = ({ type }) => {
 
       if (res.ok) {
         router.push("/");
-      }
-
-      if (res.error) {
-        toast.error("Something went wrong");
+      } else {
+        // try to parse error if any, fallback to toast
+        try {
+          const errBody = await res.json();
+          toast.error(errBody?.message || "Something went wrong");
+        } catch {
+          toast.error("Something went wrong");
+        }
       }
     }
 
@@ -44,30 +55,55 @@ const Form = ({ type }) => {
       const res = await signIn("credentials", {
         ...data,
         redirect: false,
-      })
+      });
 
-      if (res.ok) {
+      if (res?.ok) {
         router.push("/chats");
-      }
-
-      if (res.error) {
+      } else {
         toast.error("Invalid email or password");
       }
     }
   };
 
-  
-
   return (
     <div className="auth">
-      <div className="content">
-        <img src="/assets/logo.png" alt="logo" className="logo" />
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.36 }}
+        className="content"
+        aria-live="polite"
+      >
+        {/* Logo */}
+        <div className="mb-1 flex items-center justify-center">
+          <Image
+            src="/assets/logo.png"
+            alt="Halo Chat logo"
+            width={208}
+            height={64}
+            className="logo"
+            priority
+          />
+        </div>
 
-        <form className="form" onSubmit={handleSubmit(onSubmit)}>
+        <form
+          className="form w-full"
+          onSubmit={handleSubmit(onSubmit)}
+          noValidate
+          aria-label={type === "register" ? "Register form" : "Login form"}
+        >
+          {/* Username (register only) */}
           {type === "register" && (
-            <div>
-              <div className="input">
+            <div className="w-full">
+              <label className="sr-only" htmlFor="username">
+                Username
+              </label>
+              <motion.div
+                whileFocus={{ scale: 1.01 }}
+                className="input"
+              >
                 <input
+                  id="username"
                   defaultValue=""
                   {...register("username", {
                     required: "Username is required",
@@ -80,34 +116,60 @@ const Form = ({ type }) => {
                   type="text"
                   placeholder="Username"
                   className="input-field"
+                  aria-invalid={errors.username ? "true" : "false"}
+                  aria-describedby={errors.username ? "username-error" : undefined}
                 />
-                <PersonOutline sx={{ color: "#737373" }} />
-              </div>
+                <InputIcon>
+                  <HiOutlineUser size={18} />
+                </InputIcon>
+              </motion.div>
+
               {errors.username && (
-                <p className="text-red-500">{errors.username.message}</p>
+                <p id="username-error" className="mt-2 text-sm text-red-500">
+                  {errors.username.message}
+                </p>
               )}
             </div>
           )}
 
-          <div>
-            <div className="input">
+          {/* Email */}
+          <div className="w-full">
+            <label className="sr-only" htmlFor="email">
+              Email
+            </label>
+
+            <motion.div whileFocus={{ scale: 1.01 }} className="input">
               <input
+                id="email"
                 defaultValue=""
                 {...register("email", { required: "Email is required" })}
                 type="email"
                 placeholder="Email"
                 className="input-field"
+                aria-invalid={errors.email ? "true" : "false"}
+                aria-describedby={errors.email ? "email-error" : undefined}
               />
-              <EmailOutlined sx={{ color: "#737373" }} />
-            </div>
+              <InputIcon>
+                <HiOutlineMail size={18} />
+              </InputIcon>
+            </motion.div>
+
             {errors.email && (
-              <p className="text-red-500">{errors.email.message}</p>
+              <p id="email-error" className="mt-2 text-sm text-red-500">
+                {errors.email.message}
+              </p>
             )}
           </div>
 
-          <div>
-            <div className="input">
+          {/* Password */}
+          <div className="w-full">
+            <label className="sr-only" htmlFor="password">
+              Password
+            </label>
+
+            <motion.div whileFocus={{ scale: 1.01 }} className="input">
               <input
+                id="password"
                 defaultValue=""
                 {...register("password", {
                   required: "Password is required",
@@ -123,29 +185,51 @@ const Form = ({ type }) => {
                 type="password"
                 placeholder="Password"
                 className="input-field"
+                aria-invalid={errors.password ? "true" : "false"}
+                aria-describedby={errors.password ? "password-error" : undefined}
               />
-              <LockOutlined sx={{ color: "#737373" }} />
-            </div>
+              <InputIcon>
+                <HiOutlineLockClosed size={18} />
+              </InputIcon>
+            </motion.div>
+
             {errors.password && (
-              <p className="text-red-500">{errors.password.message}</p>
+              <p id="password-error" className="mt-2 text-sm text-red-500">
+                {errors.password.message}
+              </p>
             )}
           </div>
 
-          <button className="button" type="submit">
+          {/* Submit */}
+          <motion.button
+            type="submit"
+            className="button"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            disabled={isSubmitting}
+            aria-live="polite"
+          >
             {type === "register" ? "Join Free" : "Let's Chat"}
-          </button>
+          </motion.button>
         </form>
 
-        {type === "register" ? (
-          <Link href="/" className="link">
-            <p className="text-center">Already have an account? Sign In Here</p>
-          </Link>
-        ) : (
-          <Link href="/register" className="link">
-            <p className="text-center">Don't have an account? Register Here</p>
-          </Link>
-        )}
-      </div>
+        {/* Links */}
+        <div className="w-full text-center">
+          {type === "register" ? (
+            <Link href="/" className="link">
+              <p className="text-sm text-text-sub hover:text-accent transition-colors">
+                Already have an account? <span className="text-accent font-medium">Sign In</span>
+              </p>
+            </Link>
+          ) : (
+            <Link href="/register" className="link">
+              <p className="text-sm text-text-sub hover:text-accent transition-colors">
+                Don't have an account? <span className="text-accent font-medium">Register</span>
+              </p>
+            </Link>
+          )}
+        </div>
+      </motion.div>
     </div>
   );
 };
