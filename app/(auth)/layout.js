@@ -7,7 +7,7 @@ import Provider from "@components/Provider";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata = {
-  title: "Auth — Halo Chat",
+  title: "Auth — Connect Now Chat",
   description: "Build a Next 14 Chat App",
 };
 

@@ -1,4 +1,3 @@
-// components/Form.jsx
 "use client";
 
 import Image from "next/image";
@@ -7,225 +6,169 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { signIn } from "next-auth/react";
-
-import { HiOutlineMail, HiOutlineLockClosed, HiOutlineUser } from "react-icons/hi";
 import { motion } from "framer-motion";
-
-const InputIcon = ({ children }) => (
-  <div className="w-9 h-9 flex items-center justify-center rounded-lg text-text-sub">
-    {children}
-  </div>
-);
+import { Mail, Lock, User } from "lucide-react";
 
 const Form = ({ type }) => {
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm();
 
   const router = useRouter();
 
   const onSubmit = async (data) => {
-    // Keep original logic exactly the same
     if (type === "register") {
       const res = await fetch("/api/auth/register", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
 
-      if (res.ok) {
-        router.push("/");
-      } else {
-        // try to parse error if any, fallback to toast
-        try {
-          const errBody = await res.json();
-          toast.error(errBody?.message || "Something went wrong");
-        } catch {
-          toast.error("Something went wrong");
-        }
-      }
+      if (res.ok) router.push("/");
+      else toast.error("Something went wrong");
     }
 
     if (type === "login") {
-      const res = await signIn("credentials", {
-        ...data,
-        redirect: false,
-      });
-
-      if (res?.ok) {
-        router.push("/chats");
-      } else {
-        toast.error("Invalid email or password");
-      }
+      const res = await signIn("credentials", { ...data, redirect: false });
+      if (res?.ok) router.push("/chats");
+      else toast.error("Invalid email or password");
     }
   };
 
   return (
-    <div className="auth">
+    <div className="auth relative overflow-hidden">
+
+      {/* Background animation */}
       <motion.div
-        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: [0, 0.8, 0.6] }}
+        transition={{ duration: 2, repeat: Infinity }}
+        className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.3),transparent_70%)] blur-3xl"
+      />
+
+      <motion.div
+        animate={{ x: ["-30%", "20%", "-10%"], y: ["-10%", "8%", "-6%"] }}
+        transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
+        className="absolute inset-0 bg-gradient-to-br from-blue-1 via-purple-2 to-blue-3 opacity-30 blur-2xl"
+      />
+
+      {/* Glass Card UI */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.36 }}
-        className="content"
-        aria-live="polite"
+        transition={{ duration: 0.45 }}
+        className="content relative z-10 border border-white/30 backdrop-blur-2xl shadow-xl"
       >
         {/* Logo */}
-        <div className="mb-1 flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.92 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.35 }}
+          className="mb-3"
+        >
           <Image
             src="/assets/logo.png"
-            alt="Halo Chat logo"
+            alt="ConnectNow Logo"
             width={208}
             height={64}
-            className="logo"
+            className="logo drop-shadow-xl"
             priority
           />
-        </div>
+        </motion.div>
 
-        <form
-          className="form w-full"
-          onSubmit={handleSubmit(onSubmit)}
-          noValidate
-          aria-label={type === "register" ? "Register form" : "Login form"}
-        >
-          {/* Username (register only) */}
+        {/* FORM */}
+        <form onSubmit={handleSubmit(onSubmit)} className="form w-full" noValidate>
+
+          {/* Username (only in register mode) */}
           {type === "register" && (
-            <div className="w-full">
-              <label className="sr-only" htmlFor="username">
-                Username
-              </label>
-              <motion.div
-                whileFocus={{ scale: 1.01 }}
-                className="input"
-              >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full">
+              <div className="input">
                 <input
-                  id="username"
-                  defaultValue=""
                   {...register("username", {
                     required: "Username is required",
-                    validate: (value) => {
-                      if (value.length < 3) {
-                        return "Username must be at least 3 characters";
-                      }
-                    },
+                    minLength: { value: 3, message: "Minimum 3 characters required" },
                   })}
                   type="text"
-                  placeholder="Username"
-                  className="input-field"
-                  aria-invalid={errors.username ? "true" : "false"}
-                  aria-describedby={errors.username ? "username-error" : undefined}
+                  placeholder=" "
+                  className="input-field peer"
                 />
-                <InputIcon>
-                  <HiOutlineUser size={18} />
-                </InputIcon>
-              </motion.div>
 
-              {errors.username && (
-                <p id="username-error" className="mt-2 text-sm text-red-500">
-                  {errors.username.message}
-                </p>
-              )}
-            </div>
+                <label className="-top-4 text-small-medium peer-placeholder-shown:top-3 peer-placeholder-shown:text-grey-3 peer-focus:-top-4 peer-focus:text-blue-3 pointer-events-none absolute left-5 transition-all">
+                  Username
+                </label>
+
+                <User className="absolute right-4 text-grey-3 peer-focus:text-blue-3" size={20} />
+              </div>
+
+              {errors.username && <p className="text-red-500 text-subtle-medium mt-1">{errors.username.message}</p>}
+            </motion.div>
           )}
 
           {/* Email */}
-          <div className="w-full">
-            <label className="sr-only" htmlFor="email">
-              Email
-            </label>
-
-            <motion.div whileFocus={{ scale: 1.01 }} className="input">
+          <motion.div className="w-full">
+            <div className="input">
               <input
-                id="email"
-                defaultValue=""
                 {...register("email", { required: "Email is required" })}
                 type="email"
-                placeholder="Email"
-                className="input-field"
-                aria-invalid={errors.email ? "true" : "false"}
-                aria-describedby={errors.email ? "email-error" : undefined}
+                placeholder=" "
+                className="input-field peer"
               />
-              <InputIcon>
-                <HiOutlineMail size={18} />
-              </InputIcon>
-            </motion.div>
 
-            {errors.email && (
-              <p id="email-error" className="mt-2 text-sm text-red-500">
-                {errors.email.message}
-              </p>
-            )}
-          </div>
+              <label className="-top-4 text-small-medium peer-placeholder-shown:top-3 peer-placeholder-shown:text-grey-3 peer-focus:-top-4 peer-focus:text-blue-3 pointer-events-none absolute left-5 transition-all">
+                Email
+              </label>
+
+              <Mail className="absolute right-4 text-grey-3 peer-focus:text-blue-3" size={20} />
+            </div>
+
+            {errors.email && <p className="text-red-500 text-subtle-medium mt-1">{errors.email.message}</p>}
+          </motion.div>
 
           {/* Password */}
-          <div className="w-full">
-            <label className="sr-only" htmlFor="password">
-              Password
-            </label>
-
-            <motion.div whileFocus={{ scale: 1.01 }} className="input">
+          <motion.div className="w-full">
+            <div className="input">
               <input
-                id="password"
-                defaultValue=""
                 {...register("password", {
                   required: "Password is required",
-                  validate: (value) => {
-                    if (
-                      value.length < 5 ||
-                      !value.match(/[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]/)
-                    ) {
-                      return "Password must be at least 5 characters and contain at least one special character";
-                    }
-                  },
+                  minLength: { value: 6, message: "Min 6 chars required" },
                 })}
                 type="password"
-                placeholder="Password"
-                className="input-field"
-                aria-invalid={errors.password ? "true" : "false"}
-                aria-describedby={errors.password ? "password-error" : undefined}
+                placeholder=" "
+                className="input-field peer"
               />
-              <InputIcon>
-                <HiOutlineLockClosed size={18} />
-              </InputIcon>
-            </motion.div>
 
-            {errors.password && (
-              <p id="password-error" className="mt-2 text-sm text-red-500">
-                {errors.password.message}
-              </p>
-            )}
-          </div>
+              <label className="-top-4 text-small-medium peer-placeholder-shown:top-3 peer-placeholder-shown:text-grey-3 peer-focus:-top-4 peer-focus:text-blue-3 pointer-events-none absolute left-5 transition-all">
+                Password
+              </label>
 
-          {/* Submit */}
+              <Lock className="absolute right-4 text-grey-3 peer-focus:text-blue-3" size={20} />
+            </div>
+
+            {errors.password && <p className="text-red-500 text-subtle-medium mt-1">{errors.password.message}</p>}
+          </motion.div>
+
+          {/* Submit Button */}
           <motion.button
             type="submit"
-            className="button"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            className="button bg-gradient-to-r from-blue-1 to-blue-3 hover:shadow-blue-3/30"
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
             disabled={isSubmitting}
-            aria-live="polite"
           >
-            {type === "register" ? "Join Free" : "Let's Chat"}
+            {type === "register" ? "Create Account" : "Continue"}
           </motion.button>
         </form>
 
-        {/* Links */}
-        <div className="w-full text-center">
+        {/* Auth Link */}
+        <div className="text-center">
           {type === "register" ? (
             <Link href="/" className="link">
-              <p className="text-sm text-text-sub hover:text-accent transition-colors">
-                Already have an account? <span className="text-accent font-medium">Sign In</span>
-              </p>
+              <p className="text-grey-3 hover:text-blue-3 transition-all">Already have an account? <span className="font-semibold">Sign In</span></p>
             </Link>
           ) : (
             <Link href="/register" className="link">
-              <p className="text-sm text-text-sub hover:text-accent transition-colors">
-                Don't have an account? <span className="text-accent font-medium">Register</span>
-              </p>
+              <p className="text-grey-3 hover:text-blue-3 transition-all">Don't have an account? <span className="font-semibold">Register</span></p>
             </Link>
           )}
         </div>
